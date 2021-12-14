@@ -24,7 +24,7 @@ public class Main {
         System.out.println(average(l, list -> list.stream().mapToInt(number -> number).average().getAsDouble()));
 
         //первая попытка задание 5 )))
-        System.out.println(search1(d, list -> String.valueOf(d.stream().filter(x -> x.length() ==3  ).count())));
+        System.out.println("Колличество подходяших слов - "+ search1(d, list -> String.valueOf(d.stream().filter(x -> x.length() ==3  ).count())));
 
         System.out.println(search1(d, list -> {
             List<String> result = new ArrayList<>();
