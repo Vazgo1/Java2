@@ -1,4 +1,4 @@
-package HW6;
+package HW7.home.handler;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,15 +12,16 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class EchoClient extends JFrame {
-    private final String SERVER_ADDR = "localhost";
-    private final int SERVER_PORT = 8189;
+    private final int SERVER_PORT = 8888;
+    private final String SERVER_ADDR = "127.0.0.1";
+
 
     private JTextField msgInputField;
     private JTextArea chatArea;
-
     private Socket socket;
-    private DataInputStream in;
-    private DataOutputStream out;
+
+    private DataInputStream dis;
+    private DataOutputStream dos;
 
     public EchoClient() {
         try {
@@ -32,36 +33,49 @@ public class EchoClient extends JFrame {
     }
 
     public void openConnection() throws IOException {
+        String SERVER_ADDR = "127.0.0.1";
         socket = new Socket(SERVER_ADDR, SERVER_PORT);
-        in = new DataInputStream(socket.getInputStream());
-        out = new DataOutputStream(socket.getOutputStream());
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        String strFromServer = in.readUTF();
-                        if (strFromServer.equalsIgnoreCase("/end")) {
-                            break;
-                        }
-                        chatArea.append(strFromServer);
-                        chatArea.append("\n");
+        dis = new DataInputStream(socket.getInputStream());
+        dos = new DataOutputStream(socket.getOutputStream());
+        Thread thread = new Thread(() -> {
+
+            try {
+                while (true) {
+                    String massage = dis.readUTF();
+                    if (massage.startsWith("/start")) {
+                        chatArea.append(massage + "/n");
+                        break;
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    chatArea.append(massage + "/n");
                 }
+                while (true) {
+                    String strFromServer = dis.readUTF();
+                    if (strFromServer.equalsIgnoreCase("/finish")) {
+                        closeConnection();
+                        break;
+                    }
+
+                    chatArea.append(strFromServer + "\n");
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, " Ошибка соеденения с сервером");
             }
-        }).start();
+
+        });
+        thread.setDaemon(true);
+        thread.start();
     }
 
     public void closeConnection() {
         try {
-            in.close();
+            dis.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            out.close();
+            dos.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -73,9 +87,10 @@ public class EchoClient extends JFrame {
     }
 
     public void sendMessage() {
-        if (!msgInputField.getText().trim().isEmpty()) {
+        String mgs = msgInputField.getText();
+        if (mgs != null && !mgs.trim().isEmpty()) {
             try {
-                out.writeUTF(msgInputField.getText());
+                dos.writeUTF(msgInputField.getText());
                 msgInputField.setText("");
                 msgInputField.grabFocus();
             } catch (IOException e) {
@@ -105,6 +120,11 @@ public class EchoClient extends JFrame {
         add(bottomPanel, BorderLayout.SOUTH);
         bottomPanel.add(msgInputField, BorderLayout.CENTER);
         btnSendMsg.addActionListener(new ActionListener() {
+
+
+
+
+
             @Override
             public void actionPerformed(ActionEvent e) {
                 sendMessage();
@@ -123,7 +143,7 @@ public class EchoClient extends JFrame {
             public void windowClosing(WindowEvent e) {
                 super.windowClosing(e);
                 try {
-                    out.writeUTF("/end");
+                    dos.writeUTF("/Finish");
                     closeConnection();
                 } catch (IOException exc) {
                     exc.printStackTrace();
@@ -135,11 +155,11 @@ public class EchoClient extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new EchoClient();
-            }
-        });
+        try {
+            new EchoClient();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
+
 }
